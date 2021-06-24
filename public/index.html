@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WS-echo-room</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="app">
+        <h3>Echo room</h3>
+
+        <span class="disconnected" :class="{ connected: connectionState}"> {{connectionStateMsg}} </span>
+        <br/>
+        <button class="btn" v-if="!connectionState" @click="connectToWs">Connect</button> <br/>
+        <button class="btn" v-if="connectionState" @click="disconnectFromWs">Disconnect</button>
+
+        <div v-if="connectionState" id="messages">
+            <div class="message" v-for="message in messages">
+                <span class="sent" v-if="message.sent">Sent: {{message.text}}</span>
+                <span class="recieved" v-if="!message.sent">Recieved: {{message.text}}</span>
+            </div>
+        </div>
+        <div v-if="connectionState">
+            <input v-model="newMsg" type="text"> <br />
+            <button class="btn-send" @click="sendMsg">Send</button>
+        </div>
+    </div>
+
+
+
+
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+    <script>
+        var app = new Vue({
+            el: '#app',
+            data(){
+                return {
+                    socket: '',
+                    newMsg: '',
+                    messages: [],
+                    connectionState: false,
+                    connectionStateMsg: 'Not connected to WS'
+                }
+            },
+            methods: {
+                sendMsg(){
+                    this.messages.push({
+                        sent: true,
+                        text: this.newMsg
+                    })
+                    this.socket.send(this.newMsg)
+                    this.newMsg = '';
+                },
+                connectToWs(){
+                    this.socket = new WebSocket('ws://localhost:8080')
+
+                    this.socket.addEventListener('open', () => {
+                        this.connectionState = true;
+                        this.connectionStateMsg = 'Connected to WS'
+                })
+
+                this.socket.addEventListener('message', (data) => {
+                    this.messages.push({
+                        sent: false,
+                        text: data.data
+                    });
+                })
+
+                
+                },
+                disconnectFromWs(){
+                    this.socket.close()
+                    this.connectionState = false;
+                    this.connectionStateMsg = 'Not connected to WS'
+                }
+            }
+        })
+    </script>
+</body>
+</html>
